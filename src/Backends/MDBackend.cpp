@@ -62,6 +62,19 @@ void MDBackend::get_settings(input_file &inp) {
 	llint print_every;
 	getInputString(&inp, "energy_file", energy_file, 1);
 	getInputLLInt(&inp, "print_energy_every", &print_every, 1);
+	int print_hb_energy = 0;
+	getInputBoolAsInt(&inp, "print_hb_energy", &print_hb_energy, 0);
+	int print_dh_energy = 0;
+	getInputBoolAsInt(&inp, "print_dh_energy", &print_dh_energy, 0);
+
+	auto add_optional_energy_observables = [&](std::shared_ptr<ObservableOutput> &out) {
+		if(print_hb_energy) {
+			out->add_observable("type = hb_energy");
+		}
+		if(print_dh_energy) {
+			out->add_observable("type = dh_energy");
+		}
+	};
 
 	// we build the default stream of observables;
 	// we use a helper string for that
@@ -70,6 +83,7 @@ void MDBackend::get_settings(input_file &inp) {
 	add_output(_obs_output_file);
 	_obs_output_file->add_observable("type = step\nunits = MD");
 	_obs_output_file->add_observable("type = total_energy");
+	add_optional_energy_observables(_obs_output_file);
 	if(_use_barostat) {
 		_obs_output_file->add_observable("type = density");
 	}
@@ -85,6 +99,7 @@ void MDBackend::get_settings(input_file &inp) {
 		_obs_output_stdout->add_observable("type = step");
 		_obs_output_stdout->add_observable("type = step\nunits = MD");
 		_obs_output_stdout->add_observable("type = total_energy");
+		add_optional_energy_observables(_obs_output_stdout);
 		if(_use_barostat) {
 			_obs_output_stdout->add_observable("type = density");
 		}

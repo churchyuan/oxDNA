@@ -18,6 +18,7 @@
 #include "Configurations/Configuration.h"
 #include "BackendInfo.h"
 #include "HBEnergy.h"
+#include "DHEnergy.h"
 #include "PairEnergy.h"
 #include "PairForce.h"
 #include "OrderParameterValues.h"
@@ -82,6 +83,7 @@ ObservablePtr ObservableFactory::make_observable(input_file &obs_inp) {
 	else if(!strncasecmp(obs_type, "backend_info", 512)) res = std::make_shared<BackendInfo>();
 	else if(!strncasecmp(obs_type, "configuration", 512)) res = std::make_shared<Configuration>();
 	else if(!strncasecmp(obs_type, "hb_energy", 512)) res = std::make_shared<HBEnergy>();
+	else if(!strncasecmp(obs_type, "dh_energy", 512)) res = std::make_shared<DHEnergy>();
 	else if(!strncasecmp(obs_type, "pair_energy", 512)) res = std::make_shared<PairEnergy>();
 	else if(!strncasecmp(obs_type, "pair_force", 512)) res = std::make_shared<PairForce>();
 	else if(!strncasecmp(obs_type, "hb_list", 512)) res = std::make_shared<HBList>();

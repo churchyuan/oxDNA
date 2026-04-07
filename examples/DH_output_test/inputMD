@@ -1,0 +1,46 @@
+### Generic options ###
+
+interaction_type = DNA2
+sim_type = MD
+backend = CPU
+backend_precision = double
+# double is recommended for CPU simulations
+debug = 0
+# see verbose logs
+
+### simulations options ###
+#
+salt_concentration = 0.15
+steps = 1e4
+restart_step_counter = 0
+seed = time
+T =30C
+fix_diffusion=1
+# invoke periodic boundary conditions
+verlet_skin = 0.05
+use_average_seq =0
+seq_dep_file=oxDNA2_sequence_dependent_parameters.txt
+external_forces = 0
+#external_forces_file = force.txt
+
+### Molecular dynamics simulations options ###
+dt = 0.003
+thermostat = john
+newtonian_steps =100
+diff_coeff = 2.5
+
+### Input/Output ###
+
+conf_file = last_conf_MC.dat
+topology = input_conf.top
+trajectory_file = trajectory_trap.dat
+lastconf_file = last_conf_trap.dat
+refresh_vel = 1
+no_stdout_energy = 0
+restart_step_counter = 1
+energy_file = energy_trap.dat
+print_conf_interval = 25000
+print_energy_every = 1000
+time_scale = linear
+# 输出DH能量
+print_dh_energy = 1

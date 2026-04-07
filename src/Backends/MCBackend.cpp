@@ -82,6 +82,20 @@ void MCBackend::get_settings(input_file &inp) {
 		getInputNumber(&inp, "delta_rotation", &_delta[MC_MOVE_ROTATION], 1);
 	}
 
+	int print_hb_energy = 0;
+	getInputBoolAsInt(&inp, "print_hb_energy", &print_hb_energy, 0);
+	int print_dh_energy = 0;
+	getInputBoolAsInt(&inp, "print_dh_energy", &print_dh_energy, 0);
+
+	auto add_optional_energy_observables = [&](std::shared_ptr<ObservableOutput> &out) {
+		if(print_hb_energy) {
+			out->add_observable("type = hb_energy");
+		}
+		if(print_dh_energy) {
+			out->add_observable("type = dh_energy");
+		}
+	};
+
 	char energy_file[512];
 	llint print_every;
 	getInputString(&inp, "energy_file", energy_file, 1);
@@ -92,6 +106,7 @@ void MCBackend::get_settings(input_file &inp) {
 	_obs_output_file = std::make_shared<ObservableOutput>(fake);
 	_obs_output_file->add_observable("type = step");
 	_obs_output_file->add_observable("type = potential_energy");
+	add_optional_energy_observables(_obs_output_file);
 	if(_ensemble == MC_ENSEMBLE_NPT) {
 		_obs_output_file->add_observable("type = density");
 	}
@@ -107,6 +122,7 @@ void MCBackend::get_settings(input_file &inp) {
 		add_output(_obs_output_stdout);
 		_obs_output_stdout->add_observable("type = step");
 		_obs_output_stdout->add_observable("type = potential_energy");
+		add_optional_energy_observables(_obs_output_stdout);
 		if(_ensemble == MC_ENSEMBLE_NPT) {
 			_obs_output_stdout->add_observable("type = density");
 		}

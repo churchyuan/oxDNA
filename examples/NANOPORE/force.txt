@@ -1,0 +1,17 @@
+{
+  type = nanopore
+  particle = all
+  stiff = 100.0
+  radius = 4.0
+  thickness = 10.0
+  center = 0,0,0
+  dir = 0,0,1
+}
+
+{
+  type = string
+  particle = 0
+  F0 = 1
+  rate = 0.0
+  dir = 1,1,0
+}

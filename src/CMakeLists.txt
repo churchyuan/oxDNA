@@ -22,6 +22,7 @@ SET(observables_SOURCES
 	Observables/TotalEnergy.cpp
 	Observables/BackendInfo.cpp	
 	Observables/HBEnergy.cpp
+	Observables/DHEnergy.cpp
 	Observables/OrderParameterValues.cpp
 	Observables/HBList.cpp
 	Observables/StrandwiseBonds.cpp
@@ -179,6 +180,7 @@ SET(forces_SOURCES
 	Forces/AttractionPlane.cpp
 	Forces/RepulsiveKeplerPoinsot.cpp
 	Forces/RepulsiveSphereMoving.cpp
+	Forces/Nanopore.cpp
 
 )
 

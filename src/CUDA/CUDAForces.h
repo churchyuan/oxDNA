@@ -28,6 +28,7 @@
 #include "../Forces/YukawaSphere.h"
 #include "../Forces/Metadynamics/LTCOMTrap.h"
 #include "../Forces/AttractionPlane.h"
+#include "../Forces/Nanopore.h"
 
 #include "CUDAUtils.h"
 
@@ -51,6 +52,7 @@
 #define CUDA_ATTRACTION_PLANE 16
 #define CUDA_REPULSIVE_SPHERE_MOVING 17
 #define CUDA_REPULSIVE_KEPLER_POINSOT 18
+#define CUDA_NANOPORE 19
 
 
 /**
@@ -544,6 +546,24 @@ inline void init_RepulsiveKeplerPoinsot_from_CPU(repulsive_kepler_poinsot *cuda_
 	cuda_force->centre = make_float3(cpu_force->_centre.x, cpu_force->_centre.y, cpu_force->_centre.z);
 }
 
+struct nanopore {
+	int type;
+	c_number stiff;
+	c_number radius;
+	c_number half_thickness;
+	float3 centre;
+	float3 dir;
+};
+
+inline void init_Nanopore_from_CPU(nanopore *cuda_force, Nanopore *cpu_force) {
+	cuda_force->type = CUDA_NANOPORE;
+	cuda_force->stiff = cpu_force->_stiff;
+	cuda_force->radius = cpu_force->_radius;
+	cuda_force->half_thickness = cpu_force->_half_thickness;
+	cuda_force->centre = make_float3(cpu_force->_pos0.x, cpu_force->_pos0.y, cpu_force->_pos0.z);
+	cuda_force->dir = make_float3(cpu_force->_direction.x, cpu_force->_direction.y, cpu_force->_direction.z);
+}
+
 /**
  * @brief Used internally by CUDA classes to provide an inheritance-like mechanism for external forces.
  */
@@ -568,6 +588,7 @@ union CUDA_trap {
 	attraction_plane attractionplane;
 	repulsive_sphere_moving repulsivespheremoving;
 	repulsive_kepler_poinsot repulsivekeplerpoinsot;
+	nanopore nanopore;
 };
 
 #endif /* CUDAFORCES_H_ */
