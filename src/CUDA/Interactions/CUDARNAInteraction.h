@@ -34,6 +34,8 @@ public:
 	float _minus_kappa;
 	// End copy from DNA2Interaction.h
 	int *_d_is_strand_end = nullptr;
+	const uint8_t *_d_particle_filter = nullptr;
+	bool _filter_requires_dna = false;
 
 	CUDARNAInteraction();
 	virtual ~CUDARNAInteraction();
@@ -42,6 +44,10 @@ public:
 	void cuda_init(int N) override;
 	c_number get_cuda_rcut() {
 		return this->get_rcut();
+	}
+	void set_particle_filter(const uint8_t *d_particle_filter, bool requires_dna) {
+		_d_particle_filter = d_particle_filter;
+		_filter_requires_dna = requires_dna;
 	}
 
 	void _on_T_update() override;

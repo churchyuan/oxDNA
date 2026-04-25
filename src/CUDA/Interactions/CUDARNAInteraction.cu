@@ -394,28 +394,30 @@ void CUDARNAInteraction::compute_forces(CUDABaseList*lists, c_number4 *d_poss, G
 			rna_forces_edge_nonbonded
 				<<<(lists->N_edges - 1)/(_launch_cfg.threads_per_block) + 1, _launch_cfg.threads_per_block>>>
 				(d_poss, d_orientations, d_forces, d_torques, lists->d_edge_list, lists->N_edges, _d_is_strand_end,
-				_average,_use_debye_huckel,_mismatch_repulsion, d_box);
+				_d_is_strand_end, _grooving, _use_debye_huckel, _mismatch_repulsion, d_box, _d_particle_filter, _filter_requires_dna);
 		}
 		else { // sum required, somewhat slower
 			rna_forces_edge_nonbonded
 				<<<(lists->N_edges - 1)/(_launch_cfg.threads_per_block) + 1, _launch_cfg.threads_per_block>>>
 				(d_poss, d_orientations, _d_edge_forces, _d_edge_torques, lists->d_edge_list, lists->N_edges,
-				_d_is_strand_end, _average,_use_debye_huckel,_mismatch_repulsion, d_box);
+				_d_is_strand_end, _grooving, _use_debye_huckel, _mismatch_repulsion, d_box, _d_particle_filter, _filter_requires_dna);
 			_sum_edge_forces_torques(d_forces, d_torques);
 		}
 
 		rna_forces_edge_bonded
 			<<<_launch_cfg.blocks, _launch_cfg.threads_per_block>>>
 			(d_poss, d_orientations, d_forces, d_torques, d_bonds, _average, _use_mbf, _mbf_xmax, _mbf_finf);
-	}
+			_use_mbf, _mbf_xmax, _mbf_finf, _d_particle_filter, _filter_requires_dna);
 	else {
 		rna_forces
 			<<<_launch_cfg.blocks, _launch_cfg.threads_per_block>>>
 			(d_poss, d_orientations, d_forces, d_torques, lists->d_matrix_neighs, lists->d_number_neighs, d_bonds,
 					_average,_use_debye_huckel,_mismatch_repulsion, _use_mbf,_mbf_xmax, _mbf_finf, d_box);
 		CUT_CHECK_ERROR("forces_second_step simple_lists error");
-	}
+			_mbf_finf, d_box, _d_particle_filter, _filter_requires_dna);
 }
+
+void CUDARNAInteraction::_hb_op_precalc(c_number4 *poss, GPU_quat *orientations, int *op_pairs1, int *op_pairs2, float *hb_energies, int n_threads, bool *region_is_nearhb, CUDA_kernel_cfg ffs_hb_precalc_kernel_cfg, CUDABox*d_box) {
 
 void CUDARNAInteraction::_hb_op_precalc(c_number4 *poss, GPU_quat *orientations, int *op_pairs1, int *op_pairs2, float *hb_energies, int n_threads, bool *region_is_nearhb, CUDA_kernel_cfg ffs_hb_precalc_kernel_cfg, CUDABox*d_box) {
 	rna_hb_op_precalc<<<ffs_hb_precalc_kernel_cfg.blocks, ffs_hb_precalc_kernel_cfg.threads_per_block>>>(poss, orientations, op_pairs1, op_pairs2, hb_energies, n_threads, region_is_nearhb, d_box);

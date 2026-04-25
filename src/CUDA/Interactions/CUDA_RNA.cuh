@@ -40,6 +40,14 @@ __constant__ bool MD_dh_half_charged_ends[1];
 
 //__constant__ struct Model RNA_MODEL;
 
+__forceinline__ __device__ bool _rna_filter_match(int particle_index, const uint8_t *particle_filter, bool filter_requires_dna) {
+	if(particle_filter == nullptr) {
+		return true;
+	}
+
+	return ((particle_filter[particle_index] != 0) == filter_requires_dna);
+}
+
 struct CUDAModel {
 	float RNA_POS_BACK;
 	float RNA_POS_STACK;
@@ -968,13 +976,17 @@ void _particle_particle_RNA_interaction(const c_number4 &r, const c_number4 &ppo
 
 __global__ void rna_forces_edge_nonbonded(const c_number4 __restrict__ *poss, const GPU_quat __restrict__ *orientations,
 		c_number4 __restrict__ *forces, c_number4 __restrict__ *torques, const edge_bond __restrict__ *edge_list,
-		int n_edges, const int *is_strand_end, bool average, bool use_debye_huckel, bool mismatch_repulsion, CUDABox *box) {
+		int n_edges, const int *is_strand_end, bool average, bool use_debye_huckel, bool mismatch_repulsion, CUDABox *box,
+		const uint8_t *particle_filter, bool filter_requires_dna) {
 	if(IND >= n_edges) return;
 
 	c_number4 dF = make_c_number4(0, 0, 0, 0);
 	c_number4 dT = make_c_number4(0, 0, 0, 0);
 
 	edge_bond b = edge_list[IND];
+	if(!_rna_filter_match(b.from, particle_filter, filter_requires_dna) || !_rna_filter_match(b.to, particle_filter, filter_requires_dna)) {
+		return;
+	}
 
 	// get info for particle 1
 	c_number4 ppos = poss[b.from];
@@ -1013,8 +1025,9 @@ __global__ void rna_forces_edge_nonbonded(const c_number4 __restrict__ *poss, co
 // bonded interactions for edge-based approach
 __global__ void rna_forces_edge_bonded(const c_number4 __restrict__ *poss, const GPU_quat __restrict__ *orientations,
 		c_number4 __restrict__ *forces, c_number4 __restrict__ *torques, const LR_bonds __restrict__ *bonds, bool average,
-		bool use_mbf, c_number mbf_xmax, c_number mbf_finf) {
+		bool use_mbf, c_number mbf_xmax, c_number mbf_finf, const uint8_t *particle_filter, bool filter_requires_dna) {
 	if(IND >= MD_N[0]) return;
+	if(!_rna_filter_match(IND, particle_filter, filter_requires_dna)) return;
 
 	c_number4 F0 = forces[IND];
 	c_number4 T0 = torques[IND];
@@ -1026,14 +1039,14 @@ __global__ void rna_forces_edge_bonded(const c_number4 __restrict__ *poss, const
 	c_number4 a1, a2, a3;
 	get_vectors_from_quat(orientations[IND], a1, a2, a3);
 
-	if(bs.n3 != P_INVALID) {
+	if(bs.n3 != P_INVALID && _rna_filter_match(bs.n3, particle_filter, filter_requires_dna)) {
 		c_number4 qpos = poss[bs.n3];
 		c_number4 b1, b2, b3;
 		get_vectors_from_quat(orientations[bs.n3], b1, b2, b3);
 
 		_bonded_part<true>(ppos, a1, a2, a3, qpos, b1, b2, b3, dF, dT, average, use_mbf, mbf_xmax, mbf_finf);
 	}
-	if(bs.n5 != P_INVALID) {
+	if(bs.n5 != P_INVALID && _rna_filter_match(bs.n5, particle_filter, filter_requires_dna)) {
 		c_number4 qpos = poss[bs.n5];
 		c_number4 b1, b2, b3;
 		get_vectors_from_quat(orientations[bs.n5], b1, b2, b3);
@@ -1048,8 +1061,10 @@ __global__ void rna_forces_edge_bonded(const c_number4 __restrict__ *poss, const
 
 __global__ void rna_forces(const c_number4 __restrict__ *poss, const GPU_quat __restrict__ *orientations, c_number4 __restrict__ *forces,
 		c_number4 __restrict__ *torques, const int *matrix_neighs, const int *number_neighs, const LR_bonds __restrict__ *bonds, bool average,
-		bool use_debye_huckel, bool mismatch_repulsion, bool use_mbf, c_number mbf_xmax, c_number mbf_finf, CUDABox *box) {
+		bool use_debye_huckel, bool mismatch_repulsion, bool use_mbf, c_number mbf_xmax, c_number mbf_finf, CUDABox *box,
+		const uint8_t *particle_filter, bool filter_requires_dna) {
 	if(IND >= MD_N[0]) return;
+	if(!_rna_filter_match(IND, particle_filter, filter_requires_dna)) return;
 
 	c_number4 F = forces[IND];
 	c_number4 T = make_c_number4(0, 0, 0, 0);
@@ -1060,7 +1075,7 @@ __global__ void rna_forces(const c_number4 __restrict__ *poss, const GPU_quat __
 	c_number4 a1, a2, a3;
 	get_vectors_from_quat(orientations[IND], a1, a2, a3);
 
-	if(pbonds.n3 != P_INVALID) {
+	if(pbonds.n3 != P_INVALID && _rna_filter_match(pbonds.n3, particle_filter, filter_requires_dna)) {
 		c_number4 qpos = poss[pbonds.n3];
 		c_number4 b1, b2, b3;
 		get_vectors_from_quat(orientations[pbonds.n3], b1, b2, b3);
@@ -1068,7 +1083,7 @@ __global__ void rna_forces(const c_number4 __restrict__ *poss, const GPU_quat __
 		_bonded_part<true>(ppos, a1, a2, a3, qpos, b1, b2, b3, F, T, average, use_mbf, mbf_xmax, mbf_finf);
 
 	}
-	if(pbonds.n5 != P_INVALID) {
+	if(pbonds.n5 != P_INVALID && _rna_filter_match(pbonds.n5, particle_filter, filter_requires_dna)) {
 		c_number4 qpos = poss[pbonds.n5];
 		c_number4 b1, b2, b3;
 		get_vectors_from_quat(orientations[pbonds.n5], b1, b2, b3);
@@ -1083,7 +1098,7 @@ __global__ void rna_forces(const c_number4 __restrict__ *poss, const GPU_quat __
 	for(int j = 0; j < num_neighs; j++) {
 		int k_index = NEXT_NEIGHBOUR(IND, j, matrix_neighs);
 
-		if(k_index != IND && pbonds.n3 != k_index && pbonds.n5 != k_index) {
+		if(k_index != IND && pbonds.n3 != k_index && pbonds.n5 != k_index && _rna_filter_match(k_index, particle_filter, filter_requires_dna)) {
 			const c_number4 qpos = poss[k_index];
 			c_number4 r = box->minimum_image(ppos, qpos);
 

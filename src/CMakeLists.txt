@@ -272,6 +272,7 @@ IF(CUDA)
 		CUDA/Interactions/CUDABaseInteraction.cu
 		CUDA/Interactions/CUDADNAInteraction.cu
 		CUDA/Interactions/CUDADNA3Interaction.cu
+		CUDA/Interactions/CUDADRHInteraction.cu
 		CUDA/Interactions/CUDALJInteraction.cu
 		CUDA/Interactions/CUDARNAInteraction.cu
 		CUDA/Interactions/CUDAPatchyInteraction.cu

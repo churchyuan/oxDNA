@@ -39,11 +39,17 @@ public:
 	float _minus_kappa;
 	// End copy from DNA2Interaction.h
 	int *_d_is_strand_end = nullptr;
+	const uint8_t *_d_particle_filter = nullptr;
+	bool _filter_requires_dna = true;
 
 	void get_settings(input_file &inp) override;
 	void cuda_init(int N) override;
 	c_number get_cuda_rcut() {
 		return this->get_rcut();
+	}
+	void set_particle_filter(const uint8_t *d_particle_filter, bool requires_dna) {
+		_d_particle_filter = d_particle_filter;
+		_filter_requires_dna = requires_dna;
 	}
 
 	void compute_forces(CUDABaseList*lists, c_number4 *d_poss, GPU_quat *d_qorientations, c_number4 *d_forces, c_number4 *d_torques, LR_bonds *d_bonds, CUDABox*d_box);
