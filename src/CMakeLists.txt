@@ -158,6 +158,7 @@ SET(forces_SOURCES
 	Forces/ConstantRateTorque.cpp
 	Forces/ConstantTrap.cpp
 	Forces/MovingTrap.cpp
+	Forces/TwistConstraintForce.cpp
 	Forces/LowdimMovingTrap.cpp
 	Forces/MutualTrap.cpp
 	Forces/RepulsiveEllipsoid.cpp

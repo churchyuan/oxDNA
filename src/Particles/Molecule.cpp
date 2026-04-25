@@ -11,6 +11,7 @@
 #include "../Forces/ConstantRateTorque.h"
 #include "../Forces/ConstantRateForce.h"
 #include "../Forces/MovingTrap.h"
+#include "../Forces/TwistConstraintForce.h"
 #include "../Utilities/ConfigInfo.h"
 
 int Molecule::_current_id = 0;
@@ -49,7 +50,8 @@ bool Molecule::shiftable() {
             for (auto force : p->ext_forces) {
                 if (typeid(*force) == typeid(MovingTrap) ||
                     typeid(*force) == typeid(ConstantRateTorque) || 
-					typeid(*force) == typeid(ConstantRateForce)) {
+					typeid(*force) == typeid(ConstantRateForce) ||
+					typeid(*force) == typeid(TwistConstraintForce)) {
                     _is_shiftable = false;
                 }
             }

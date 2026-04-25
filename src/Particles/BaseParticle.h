@@ -84,6 +84,9 @@ public:
 			for(auto ext_force : ext_forces) {
 				ext_force->set_current_particle(this);
 				force += ext_force->value(step, abs_pos);
+				if(is_rigid_body()) {
+					torque += ext_force->torque(step, abs_pos);
+				}
 			}
 		}
 	}

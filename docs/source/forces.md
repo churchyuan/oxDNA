@@ -175,6 +175,56 @@ The following is an example input for a rotating trap acting on the first nucleo
 
 ````
 
+## Twist constraint
+
+This force extends the rotating harmonic trap with an optional orientational constraint. In addition to pulling a nucleotide towards a target point, it can also constrain one body-fixed axis and, optionally, a second reference axis that fixes the twist phase. At the moment this force is implemented only on the CPU backend.
+
+A force of this kind is specified with `type = twist_constraint`. The relevant keys are:
+
+* `particle = <int>`: comma-separated list of indices of particles to apply the force to.
+* `mode = orbit | frozen`: `orbit` rotates the trap in time; `frozen` keeps the rotation phase fixed while still allowing a linear translation of the whole construction through `move_dir` and `move_rate`.
+* `pos0 = <float>,<float>,<float>`: trap position at zero phase.
+* `center = <float>,<float>,<float>`: centre of the orbital construction.
+* `axis = <float>,<float>,<float>` or `orbit_axis = <float>,<float>,<float>`: orbit axis.
+* `stiff = <float>` or `force_stiff = <float>`: positional trap stiffness.
+* `[rate = <float>]` or `[orbit_rate = <float>]`: orbital angular velocity. Must be zero in `frozen` mode.
+* `[base = <float>]` or `[phase0 = <float>]`: orbital phase at step 0.
+* `[mask = <float>,<float>,<float>]` or `[force_mask = <float>,<float>,<float>]`: element-wise mask applied to the positional restoring force. Defaults to `1,1,1`.
+* `[move_dir = <float>,<float>,<float>]`: translation direction of the whole construction.
+* `[move_rate = <float>]`: translation speed along `move_dir`.
+* `[body_axis = v1|v2|v3]`: body-fixed axis to align. Defaults to `v3`.
+* `[body_ref_axis = auto|v1|v2|v3]`: second body-fixed axis used to define the twist phase. Defaults to `auto`.
+* `[target_axis = <float>,<float>,<float>]`: direction that `body_axis` should align to.
+* `[axis_stiff = <float>]`: stiffness of the `body_axis` alignment.
+* `[target_ref = <float>,<float>,<float>]`: reference direction used to fix the twist phase. Requires `target_axis`.
+* `[twist_stiff = <float>]`: stiffness of the `body_ref_axis` alignment to the reference direction.
+* `[twist_phase0 = <float>]`: phase of the reference direction at step 0.
+* `[twist_rate = <float>]`: angular velocity of the reference direction around `target_axis`. Defaults to `orbit_rate` in `orbit` mode and must be zero in `frozen` mode.
+
+````{admonition} Example
+
+The following block keeps nucleotide 99 in a trap that can only translate along `z`, while fixing both the direction of `v3` and the twist phase identified by `v1`.
+
+	{
+	type = twist_constraint
+	particle = 99
+	mode = frozen
+	stiff = 1.0
+	pos0 = 83.1532046751, 15.950789638, 37.3071701142
+	center = 83.1532046751, 15.950789638, 37.3071701142
+	axis = 0., 0., 1.
+	move_dir = 0., 0., 1.
+	move_rate = 0.
+	body_axis = v3
+	body_ref_axis = v1
+	target_axis = 0., 0., 1.
+	target_ref = 1., 0., 0.
+	axis_stiff = 0.2
+	twist_stiff = 0.2
+	}
+
+````
+
 ## Repulsion plane
 
 This kind of external force implements a repulsion plane that constrains particles to stay on one side of it. It is implemented as a harmonic repulsion, but the stiffness can be made arbitrarily high to mimic a hard repulsion. The position of the plane can optionally move with a fixed velocity along its normal.
