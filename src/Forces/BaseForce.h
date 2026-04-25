@@ -102,6 +102,17 @@ public:
 	virtual LR_vector value(llint step, LR_vector &pos) = 0;
 
 	/**
+	 * @brief returns the torque due to the external force, in the particle frame
+	 *
+	 * External forces historically acted only through translational forces. Forces
+	 * that also constrain orientation can override this method and return a torque
+	 * contribution in the particle reference frame.
+	 */
+	virtual LR_vector torque(llint step, LR_vector &pos) {
+		return LR_vector((number) 0., (number) 0., (number) 0.);
+	}
+
+	/**
 	 * @brief returns value of the potential associated to the force (a number)
 	 *
 	 * @param step useful for forces that depend on time

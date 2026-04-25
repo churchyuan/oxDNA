@@ -30,6 +30,7 @@
 #include "RepulsiveSphereMoving.h"
 #include "RepulsiveKeplerPoinsot.h"
 #include "Nanopore.h"
+#include "TwistConstraintForce.h"
 
 // metadynamics-related forces
 #include "Metadynamics/LTCoordination.h"
@@ -73,6 +74,7 @@ void ForceFactory::add_force(input_file &inp, std::vector<BaseParticle *> &parti
 	if(type_str.compare("string") == 0) extF = std::make_shared<ConstantRateForce>();
 	else if(type_str.compare("sawtooth") == 0) extF = std::make_shared<SawtoothForce>();
 	else if(type_str.compare("twist") == 0) extF = std::make_shared<ConstantRateTorque>();
+	else if(type_str.compare("twist_constraint") == 0) extF = std::make_shared<TwistConstraintForce>();
 	else if(type_str.compare("trap") == 0) extF = std::make_shared<MovingTrap>();
 	else if(type_str.compare("repulsion_plane") == 0) extF = std::make_shared<RepulsionPlane>();
 	else if(type_str.compare("attraction_plane") == 0) extF = std::make_shared<AttractionPlane>();
