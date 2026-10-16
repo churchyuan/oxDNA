@@ -182,6 +182,7 @@ SET(forces_SOURCES
 	Forces/RepulsiveKeplerPoinsot.cpp
 	Forces/RepulsiveSphereMoving.cpp
 	Forces/Nanopore.cpp
+	Forces/CylinderConfinement.cpp
 
 )
 
@@ -367,3 +368,23 @@ target_link_libraries(confGenerator PRIVATE ${lib_name})
 # we add these executable as dependencies for the test targets
 ADD_DEPENDENCIES(test_run ${exe_name} DNAnalysis confGenerator)
 ADD_DEPENDENCIES(test_quick ${exe_name} DNAnalysis confGenerator)
+
+# Focused conservative-force tests; opt-in so normal builds remain unchanged.
+add_executable(cylindrical_force_tests EXCLUDE_FROM_ALL ../test/Forces/CylindricalForces.cpp)
+target_link_libraries(cylindrical_force_tests PRIVATE ${lib_name})
+add_custom_target(test_cylindrical_forces
+	COMMAND $<TARGET_FILE:cylindrical_force_tests>
+	DEPENDS cylindrical_force_tests
+	COMMENT "Checking cylindrical force geometry, energy gradients and input validation"
+	VERBATIM)
+
+if(CUDA AND NOT CMAKE_VERSION VERSION_LESS 3.18)
+	add_executable(cylindrical_cuda_tests EXCLUDE_FROM_ALL ../test/Forces/CylindricalCudaForces.cu)
+	target_link_libraries(cylindrical_cuda_tests PRIVATE ${lib_name} CUDA::cudart)
+	target_compile_options(cylindrical_cuda_tests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${CUDA_COMMON_FLAGS}>)
+	add_custom_target(test_cylindrical_cuda
+		COMMAND $<TARGET_FILE:cylindrical_cuda_tests>
+		DEPENDS cylindrical_cuda_tests
+		COMMENT "Comparing CPU forces with the production CUDA external-force dispatcher"
+		VERBATIM)
+endif()

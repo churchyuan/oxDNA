@@ -61,6 +61,11 @@ void MD_CPUBackend::init() {
 		_V_move->init();
 	}
 
+	// The first Verlet half-step needs the external force at the initial
+	// configuration, including when restarting while a boundary force is active.
+	for(auto p : _particles) {
+		p->set_initial_forces(current_step(), _box.get());
+	}
 	_compute_forces();
 }
 

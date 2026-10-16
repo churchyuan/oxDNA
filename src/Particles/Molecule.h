@@ -55,6 +55,11 @@ struct Molecule {
 
 	bool shiftable();
 
+	/// Re-evaluate absolute-position constraints after external forces change.
+	void invalidate_shiftable() {
+		_shiftable_dirty = true;
+	}
+
 private:
 	static int _next_id() {
 	   return _current_id++;

@@ -48,6 +48,179 @@ The following two options are supported by all forces and can be used by observa
 * `[group_name = <string>]`: an identifier that can be used to group forces together. Used, for instance, by the `force_energy` observable.
 * `[id = <string>]`: a unique identifier that can be used to refer to this specific external force.
 
+## Cylindrical geometry: nanopore and closed confinement
+
+These two external forces work alongside the selected DNA/RNA particle interaction.
+They support fixed-box CPU MC/MD and CUDA MD, and act on nucleotide **centres of mass**.
+They do not model orientation-dependent contact with individual nucleotide sites.
+NPT/`use_barostat = true` is explicitly rejected: the current backends do not
+consistently include external-field energies in volume-move acceptance.
+
+Both use a fixed centre `center` and a nonzero axis `dir` (automatically normalised).
+For an absolute particle position **x**, define `z = dir . (x-center)` and let
+`rho` be the perpendicular distance from the axis. The geometry is fixed in
+absolute coordinates; there is **no minimum-image wrapping of the external field**.
+Affected molecules are excluded from `fix_diffusion` position shifts, so the CPU
+and GPU use the same coordinates, including after loading a shifted restart.
+Pair interactions still obey the simulation box's boundary conditions: choose a
+box large enough to avoid interactions with unwanted periodic images. In a pore
+simulation, make the reservoirs large enough that DNA does not interact through
+the axial periodic boundary while on opposite sides of the membrane.
+
+Common keys:
+
+| Key | Meaning |
+| --- | --- |
+| `particle` | Particle selection, including `all` or `-1`. |
+| `stiff` | Strictly positive harmonic stiffness, in energy / length squared. |
+| `radius` | Strictly positive physical pore/container radius. |
+| `dir` | Three finite comma-separated numbers; the axis must be nonzero. |
+| `[center = 0,0,0]` | Fixed physical centre, in absolute coordinates. |
+| `[particle_radius = 0]` | Effective spherical radius around each selected centre; must satisfy `0 <= particle_radius < radius`. |
+| `[group_name]`, `[id]` | Standard external-force identifiers. |
+
+All numerical fields must be finite and fully parseable. `particle_radius` is
+an explicit modelling choice, **not** automatically inferred from the DNA model.
+With zero radius the nominal surfaces are boundaries for particle centres. A
+positive value keeps spherical centres away from the physical solid surfaces,
+including the pore rim. It does not prevent a bond segment between two centres
+from crossing a wall; check bond geometry when using coarse resolution or large
+integration/move steps.
+
+### Nanopore (`type = nanopore`)
+
+The membrane has full thickness `thickness > 0`, with a straight cylindrical
+hole. Writing `R = radius`, `h = thickness/2`, and `a = particle_radius`, the
+solid membrane occupies `rho >= R` and `|z| <= h`. The pore connects two open
+reservoirs; it has **no end caps**. There is no electric or pulling force unless
+one is added separately.
+
+Let `qr = R-rho`, `qz = |z|-h`. The exact signed distance from the membrane,
+positive in accessible space, is
+
+```text
+s = sqrt(max(qr,0)^2 + max(qz,0)^2) + min(max(qr,qz),0)
+U = (stiff/2) * max(a-s,0)^2
+F = stiff * max(a-s,0) * gradient(s)
+```
+
+Thus a finite-radius particle sees the Euclidean distance to the circular rim
+when approaching it from the pore/reservoir corner. Outside the membrane and
+farther than `a` from it, both force and energy are exactly zero.
+
+The sharp solid geometry has medial points inside the membrane where the closest
+exit is not unique. The force there uses the mean of the limiting wall/face
+gradients. At `z = 0`, the axial force is zero, preserving reflection symmetry.
+These are explicitly defined subgradients, not claims of a globally smooth
+potential. Initialise centres outside the solid: a particle placed exactly in
+the middle of the membrane can sit at a symmetric unstable stationary point.
+
+Legacy `nanopore` input remains valid. With `particle_radius = 0`, its energy and
+force are unchanged away from the medial ties; the former arbitrary preference
+for the positive-z face at the midplane has been removed.
+
+```text
+{
+    type = nanopore
+    particle = all
+    stiff = 100
+    radius = 4
+    thickness = 10
+    particle_radius = 0
+    center = 0,0,0
+    dir = 0,0,1
+    group_name = membrane
+}
+```
+
+### Closed cylinder (`type = cylinder_confinement`)
+
+The cylinder has full physical `height > 0` and two planar end caps. In addition
+to the common checks, `particle_radius < height/2` is required. Let
+`R_eff = radius-particle_radius`, `h_eff = height/2-particle_radius`. The zero
+energy region is precisely `rho <= R_eff` and `|z| <= h_eff`:
+
+```text
+dr = max(rho-R_eff,0)
+dz = max(|z|-h_eff,0)
+U = (stiff/2) * (dr^2 + dz^2)
+F = -stiff * (dr * radial_unit_vector + dz * sign(z) * dir)
+```
+
+The radial contribution is zero on the axis. At a sidewall/end-cap corner,
+**both** violations contribute; picking only the nearest wall would allow an
+escape path. This is the squared Euclidean distance to the accessible closed
+cylinder, and its force is continuous, including at the rim and on the axis.
+
+```text
+{
+    type = cylinder_confinement
+    particle = all
+    stiff = 100
+    radius = 4
+    height = 10
+    particle_radius = 0
+    center = 0,0,0
+    dir = 0,0,1
+    group_name = container
+}
+```
+
+`HardCylinderInteraction` instead describes interactions between hard cylindrical
+particles and is not the external container; keep the normal DNA/RNA interaction
+when using `cylinder_confinement`.
+
+### Choosing stiffness and checking a simulation
+
+These are finite harmonic penalties, **not impenetrable hard walls**. The closed
+cylinder's energy grows without bound with escape distance, but a finite force
+allows a small wall overlap. For a normal applied load `F_load`, the static
+overlap is approximately `F_load/stiff`; the thermal overlap length scale is
+`sqrt(T/stiff)` in oxDNA units. These are scales rather than strict bounds.
+
+The nanopore membrane has a finite penetration barrier: far from the pore the
+midplane energy is `stiff/2 * (thickness/2 + particle_radius)^2`. A thinner membrane
+or insufficient stiffness can permit crossing through the membrane solid.
+Applied driving forces lower the effective barrier. Finite-time integration or
+large MC moves can also jump a barrier without sampling its interior. Monitor
+solid penetration and reduce the step/move size rather than relying on the
+barrier height alone.
+
+In MD, keep `dt*sqrt(stiff/mass)` much smaller than one and verify convergence by
+reducing `dt` and varying `stiff`. Values in the examples are illustrative and
+are not calibrated to a specific membrane material. Monitor external potential
+with the `force_energy` observable (`print_group` selects a group).
+The default `total_energy` observable excludes external-field energy in this
+codebase. For an NVE check, add `force_energy` to kinetic and particle-interaction
+energies using consistent total/per-particle normalisation.
+
+The CPU and CUDA paths use the same geometry implementation. Geometry parameters
+use the active CUDA precision, including centre and axis; they are not forced
+through `float3` in a double-precision backend.
+
+Focused checks can be run with:
+
+```sh
+cmake --build build --target test_cylindrical_forces
+python3 test/Forces/cylindrical_smoke.py build/bin/oxDNA
+# For a CUDA build with CMake >= 3.18 and a usable GPU:
+cmake --build build --target test_cylindrical_cuda
+python3 test/Forces/cylindrical_cuda_smoke.py build/bin/oxDNA --precision mixed
+python3 test/Forces/cuda_polymer_smoke.py build/bin/oxDNA --precision mixed
+```
+
+The first target checks analytic cases, energy gradients in float/double,
+reflection/rotation invariance, legacy compatibility, parameter validation,
+factory registration and absolute-position handling. The CUDA target compares
+the production GPU external-force dispatcher and device energies against CPU
+forces for individual and combined forces. It reports an explicit skip (exit 77)
+when no usable CUDA device is present. Run it in both normal and `CUDA_DOUBLE=ON`
+builds when validating GPU support.
+
+Runnable CPU examples and CUDA overrides are in `examples/CYLINDRICAL_FORCES`.
+Recorded RTX 3080 / CUDA 12.5 validation, including float, mixed and double
+backends, is in `test/Forces/VALIDATION_cityu19_20261016.md`.
+
 ## String
 
 A string is implemented as a force that does not depend on the particle position. Its value can be constant or can change linearly with time. It is useful as it does not fluctuate with time. A force of this kind is specified with `type = string`. The relevant keys are: 

@@ -29,6 +29,7 @@
 #include "../Forces/Metadynamics/LTCOMTrap.h"
 #include "../Forces/AttractionPlane.h"
 #include "../Forces/Nanopore.h"
+#include "../Forces/CylinderConfinement.h"
 
 #include "CUDAUtils.h"
 
@@ -53,6 +54,7 @@
 #define CUDA_REPULSIVE_SPHERE_MOVING 17
 #define CUDA_REPULSIVE_KEPLER_POINSOT 18
 #define CUDA_NANOPORE 19
+#define CUDA_CYLINDER_CONFINEMENT 20
 
 
 /**
@@ -546,22 +548,19 @@ inline void init_RepulsiveKeplerPoinsot_from_CPU(repulsive_kepler_poinsot *cuda_
 	cuda_force->centre = make_float3(cpu_force->_centre.x, cpu_force->_centre.y, cpu_force->_centre.z);
 }
 
-struct nanopore {
+struct cylindrical_force {
 	int type;
-	c_number stiff;
-	c_number radius;
-	c_number half_thickness;
-	float3 centre;
-	float3 dir;
+	CylindricalGeometry::Parameters<c_number> geometry;
 };
 
-inline void init_Nanopore_from_CPU(nanopore *cuda_force, Nanopore *cpu_force) {
+inline void init_Nanopore_from_CPU(cylindrical_force *cuda_force, Nanopore *cpu_force) {
 	cuda_force->type = CUDA_NANOPORE;
-	cuda_force->stiff = cpu_force->_stiff;
-	cuda_force->radius = cpu_force->_radius;
-	cuda_force->half_thickness = cpu_force->_half_thickness;
-	cuda_force->centre = make_float3(cpu_force->_pos0.x, cpu_force->_pos0.y, cpu_force->_pos0.z);
-	cuda_force->dir = make_float3(cpu_force->_direction.x, cpu_force->_direction.y, cpu_force->_direction.z);
+	cuda_force->geometry = CylindricalGeometry::convert<c_number>(cpu_force->geometry());
+}
+
+inline void init_CylinderConfinement_from_CPU(cylindrical_force *cuda_force, CylinderConfinement *cpu_force) {
+	cuda_force->type = CUDA_CYLINDER_CONFINEMENT;
+	cuda_force->geometry = CylindricalGeometry::convert<c_number>(cpu_force->geometry());
 }
 
 /**
@@ -588,7 +587,8 @@ union CUDA_trap {
 	attraction_plane attractionplane;
 	repulsive_sphere_moving repulsivespheremoving;
 	repulsive_kepler_poinsot repulsivekeplerpoinsot;
-	nanopore nanopore;
+	cylindrical_force nanopore;
+	cylindrical_force cylinder_confinement;
 };
 
 #endif /* CUDAFORCES_H_ */
