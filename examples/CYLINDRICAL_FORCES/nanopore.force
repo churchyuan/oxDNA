@@ -1,0 +1,11 @@
+{
+    type = nanopore
+    particle = all
+    stiff = 100
+    radius = 4
+    thickness = 10
+    particle_radius = 0.4
+    center = 0,0,0
+    dir = 0,0,1
+    group_name = geometry
+}

@@ -224,11 +224,15 @@ void MD_CUDABackend::_apply_external_forces_changes() {
 					Nanopore *p_force = (Nanopore *) p->ext_forces[j];
 					init_Nanopore_from_CPU(&cuda_force->nanopore, p_force);
 				}
+				else if(force_type == typeid(CylinderConfinement)) {
+					CylinderConfinement *p_force = (CylinderConfinement *) p->ext_forces[j];
+					init_CylinderConfinement_from_CPU(&cuda_force->cylinder_confinement, p_force);
+				}
 				else {
 					throw oxDNAException("Only ConstantRate, MutualTrap, MovingTrap, LowdimMovingTrap, RepulsionPlane, "
 							"RepulsionPlaneMoving, RepulsiveSphere, LJWall, ConstantRateTorque, GenericCentralForce, "
 							"RepulsiveEllipsoid, COMForce and LTCOMTrap"
-							", YukawaSphere and Nanopore forces are supported on CUDA at the moment.\n");
+							", YukawaSphere, Nanopore and CylinderConfinement forces are supported on CUDA at the moment.\n");
 				}
 			}
 		}

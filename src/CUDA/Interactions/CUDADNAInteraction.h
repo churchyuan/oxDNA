@@ -51,6 +51,10 @@ public:
 		_d_particle_filter = d_particle_filter;
 		_filter_requires_dna = requires_dna;
 	}
+	// Hybrid interactions configure their DNA helper before cuda_init().
+	void set_grooving(int grooving) {
+		_grooving = grooving;
+	}
 
 	void compute_forces(CUDABaseList*lists, c_number4 *d_poss, GPU_quat *d_qorientations, c_number4 *d_forces, c_number4 *d_torques, LR_bonds *d_bonds, CUDABox*d_box);
 	void _hb_op_precalc(c_number4 *poss, GPU_quat *orientations, int *op_pairs1, int *op_pairs2, float *hb_energies, int n_threads, bool *region_is_nearhb, CUDA_kernel_cfg hb_kernel_cfg, CUDABox*d_box);

@@ -192,49 +192,17 @@ __global__ void set_external_forces(c_number4 *poss, GPU_quat *orientations, CUD
 				break;
 			}
 			case CUDA_NANOPORE: {
-				const c_number cx = extF.nanopore.centre.x;
-				const c_number cy = extF.nanopore.centre.y;
-				const c_number cz = extF.nanopore.centre.z;
-				const c_number dx = extF.nanopore.dir.x;
-				const c_number dy = extF.nanopore.dir.y;
-				const c_number dz = extF.nanopore.dir.z;
-				const c_number stiff = extF.nanopore.stiff;
-				const c_number radius = extF.nanopore.radius;
-				const c_number half_thickness = extF.nanopore.half_thickness;
-
-				const c_number rx = ppos.x - cx;
-				const c_number ry = ppos.y - cy;
-				const c_number rz = ppos.z - cz;
-
-				const c_number z = dx * rx + dy * ry + dz * rz;
-				const c_number absz = (z >= (c_number)0) ? z : -z;
-				if(absz >= half_thickness) break;
-
-				const c_number rpx = rx - z * dx;
-				const c_number rpy = ry - z * dy;
-				const c_number rpz = rz - z * dz;
-
-				const c_number rho2 = rpx * rpx + rpy * rpy + rpz * rpz;
-				const c_number rho = sqrt(rho2);
-				if(rho <= radius) break;
-
-				const c_number d_plane = half_thickness - absz;
-				const c_number d_cyl = rho - radius;
-
-				if(d_cyl < d_plane) {
-					if(rho <= (c_number)0) break;
-					const c_number pref = -(stiff * d_cyl / rho);
-					F.x += pref * rpx;
-					F.y += pref * rpy;
-					F.z += pref * rpz;
-				}
-				else {
-					const c_number sgn = (z >= (c_number)0) ? (c_number)1 : (c_number)-1;
-					const c_number pref = stiff * d_plane * sgn;
-					F.x += pref * dx;
-					F.y += pref * dy;
-					F.z += pref * dz;
-				}
+				const auto result = CylindricalGeometry::nanopore(extF.nanopore.geometry, ppos.x, ppos.y, ppos.z);
+				F.x += result.fx;
+				F.y += result.fy;
+				F.z += result.fz;
+				break;
+			}
+			case CUDA_CYLINDER_CONFINEMENT: {
+				const auto result = CylindricalGeometry::cylinder(extF.cylinder_confinement.geometry, ppos.x, ppos.y, ppos.z);
+				F.x += result.fx;
+				F.y += result.fy;
+				F.z += result.fz;
 				break;
 			}
 			case CUDA_REPULSION_PLANE_MOVING: {

@@ -1,0 +1,35 @@
+interaction_type = DNA2
+sim_type = MD
+backend = CPU
+backend_precision = double
+T = 0.1
+salt_concentration = 0.15
+steps = 1000
+dt = 0.001
+thermostat = no
+refresh_vel = 1
+seed = 1907
+restart_step_counter = 1
+fix_diffusion = 1
+verlet_skin = 0.2
+conf_file = particle.dat
+topology = particle.top
+external_forces = 1
+external_forces_file = cylinder.force
+trajectory_file = trajectory.dat
+lastconf_file = last_conf.dat
+energy_file = energy.dat
+print_conf_interval = 100
+print_energy_every = 100
+time_scale = linear
+data_output_1 = {
+    name = geometry_energy.dat
+    print_every = 100
+    col_1 = {
+        type = step
+    }
+    col_2 = {
+        type = force_energy
+        print_group = geometry
+    }
+}
